@@ -2,7 +2,7 @@ name:                ImageCompressor
 version:             0.1.0.0
 github:              "MaoKoro/ImageCompressor"
 license:             BSD3
-author:              "Maori Dino & Thiabut Tran"
+author:              "Maori Dino & Thibaut Tran"
 maintainer:          "example@example.com"
 copyright:           "2023 DinoTran"
 
@@ -21,6 +21,9 @@ description:         Please see the README on GitHub at <https://github.com/MaoK
 
 dependencies:
 - base >= 4.7 && < 5
+- text
+- parsec
+
 
 ghc-options:
 - -Wall

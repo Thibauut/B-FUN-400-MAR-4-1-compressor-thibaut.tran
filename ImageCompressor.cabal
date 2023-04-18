@@ -9,7 +9,7 @@ version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/MaoKoro/ImageCompressor#readme>
 homepage:       https://github.com/MaoKoro/ImageCompressor#readme
 bug-reports:    https://github.com/MaoKoro/ImageCompressor/issues
-author:         Maori Dino & Thiabut Tran
+author:         Maori Dino & Thibaut Tran
 maintainer:     example@example.com
 copyright:      2023 DinoTran
 license:        BSD3
@@ -33,6 +33,8 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , parsec
+    , text
   default-language: Haskell2010
 
 executable ImageCompressor-exe
@@ -45,6 +47,8 @@ executable ImageCompressor-exe
   build-depends:
       ImageCompressor
     , base >=4.7 && <5
+    , parsec
+    , text
   default-language: Haskell2010
 
 test-suite ImageCompressor-test
@@ -58,4 +62,6 @@ test-suite ImageCompressor-test
   build-depends:
       ImageCompressor
     , base >=4.7 && <5
+    , parsec
+    , text
   default-language: Haskell2010
