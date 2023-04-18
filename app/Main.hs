@@ -96,9 +96,13 @@ checkFlags [] num = True
 checkFlags (x:xs) num | (x /= "-n" && x /= "-l" && x /= "-f" && (num `mod` 2) == 0) = False
                       | otherwise = checkFlags xs (num + 1)
 
+checkArgumentsIntNext :: String -> IO ()
+checkArgumentsIntNext str | (readMaybe str :: Maybe Int) < Just(1) || (readMaybe str :: Maybe Int) > Just(255)  = exitWith (ExitFailure 84)
+                          | otherwise = return ()
+
 checkArgumentsInt :: String -> IO ()
 checkArgumentsInt str | (readMaybe str :: Maybe Int) == Nothing = exitWith (ExitFailure 84)
-                         | otherwise = return ()
+                      | otherwise = checkArgumentsIntNext str
 
 checkArgumentsDoubleNext :: String -> IO()
 checkArgumentsDoubleNext str | (readMaybe str :: Maybe Double) < Just(0) || (readMaybe str :: Maybe Double) > Just(1)  = exitWith (ExitFailure 84)
