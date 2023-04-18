@@ -100,9 +100,13 @@ checkArgumentsInt :: String -> IO ()
 checkArgumentsInt str | (readMaybe str :: Maybe Int) == Nothing = exitWith (ExitFailure 84)
                          | otherwise = return ()
 
+checkArgumentsDoubleNext :: String -> IO()
+checkArgumentsDoubleNext str | (readMaybe str :: Maybe Double) < Just(0) || (readMaybe str :: Maybe Double) > Just(1)  = exitWith (ExitFailure 84)
+                             | otherwise = return ()
+
 checkArgumentsDouble :: String -> IO ()
 checkArgumentsDouble str | (readMaybe str :: Maybe Double) == Nothing = exitWith (ExitFailure 84)
-                         | otherwise = return ()
+                         | otherwise = checkArgumentsDoubleNext str
 
 
 checkNumberOfColors :: [Cluster] -> Int -> Bool
@@ -134,7 +138,6 @@ main = do
     -- print(parsePoints file)
     res <- kMeans (read (args !! (getArg args "-n" 0)) :: Int) (read (args !! (getArg args "-l" 0)) :: Double) (parsePoints file)
     putStrLn "--"
-    print res
     putStrLn "-"
     putStrLn "--"
     putStrLn "-"
