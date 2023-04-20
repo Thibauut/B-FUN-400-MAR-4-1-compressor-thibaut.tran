@@ -105,10 +105,10 @@ kMeans :: Int -> Double -> [Centroid] -> [Point] -> IO()
 kMeans k threshold centroids points = do
   centro <- initCentroids k points
   let loop index oldCentroids = do
-        let newIndex = closest centro points []
-            newCentroids = calculateCentroid centro newIndex
+        let newIndex = closest oldCentroids points []
+            newCentroids = calculateCentroid oldCentroids points newIndex 0 []
         if isConverged oldCentroids newCentroids threshold
-          then printResult newCentroids (closest newCentroids points []) points 0
+          then printResult oldCentroids newIndex points 0
           else loop newIndex newCentroids
   loop [] centro
 
@@ -168,7 +168,6 @@ main = do
     -- printCentroids centro
     res <- kMeans (read (args !! (getArg args "-n" 0)) :: Int) (read (args !! (getArg args "-l" 0)) :: Double) [] (parsePoints file)
     -- print (floor ((calculateCentroid (getCluster res 1)) !! 2))
-    -- print res
     return 0
 
 findClosest :: [Centroid] -> Point -> Double -> Int -> Int -> Int
@@ -192,11 +191,64 @@ closest centroids (x:xs) index = do
 --     let tmp = calculateCentroid (getCluster points index) 0
 --     tmp : calculateNewCentroids xs points (index + 1)
 
-calculateCentroid :: [Centroid] -> Index -> [Centroid]
-calculateCentroid points index = points
+calculatePoints :: Centroid -> [Point] -> Index -> Int -> Int -> Int -> Int
+calculatePoints centroid points [] n res pos = res
+calculatePoints centroid (y:ys) (x:xs) n res pos = do
+    if x == n then
+        calculatePoints centroid (y:ys) (x:xs) n (res + (centroid !! pos)) pos
+    else
+        calculatePoints centroid ys xs n res pos
 
--- calculateCentroid :: Centroid -> Index -> Centroid
--- calculateCentroid points index =
---   let pointCount = fromIntegral $ length points
---       sums = map sum $ transpose points
---   in map (/ pointCount) sums
+-- calculatePoints :: Centroid -> [Point] -> Index -> Int -> Int -> Int -> Int
+-- calculatePoints _ [] [] _ res _ = res
+-- calculatePoints centroid (y:ys) (x:xs) n res pos
+--   | x == n = calculatePoints centroid ys xs n (res + centroid !! pos) pos
+--   | otherwise = calculatePoints centroid ys xs n res pos
+
+getIndex :: Index -> Int -> Int -> Int
+getIndex [] n count = count
+getIndex (x:xs) n count
+    | x == n = getIndex xs n (count + 1)
+    | otherwise = getIndex xs n count
+
+-- calculateCentroid :: [Centroid] -> [Point] -> Index -> Int -> [Centroid]
+-- calculateCentroid [] points index n = []
+-- calculateCentroid (x:xs) points index n = do
+--     let nbOccur = getIndex index n
+--         newOccur = (fromIntegral nbOccur)
+--     let r = calculatePoints x points index n 0 2
+--         r2 = (fromIntegral r / newOccur)
+--     let g = calculatePoints x points index n 0 3
+--         g2 = (fromIntegral g / newOccur)
+--     let b = calculatePoints x points index n 0 4
+--         b2 = (fromIntegral b / newOccur)
+--     let tmp = [(x !! 0), (x !! 1), r2, g2, b2]
+--     tmp : calculateCentroid xs points index (n + 1)
+
+calculateCentroid :: [Centroid] -> [Point] -> Index -> Int -> [Centroid] -> [Centroid]
+calculateCentroid [] points index n centro  = centro
+calculateCentroid (x:xs) points index n centro = do
+    let nbOccur = getIndex index n n
+        newOccur = fromIntegral nbOccur :: Double
+    let r = calculatePoints x points index n 0 2
+        r2 = fromIntegral r / newOccur
+    let g = calculatePoints x points index n 0 3
+        g2 = fromIntegral g / newOccur
+    let b = calculatePoints x points index n 0 4
+        b2 = fromIntegral b / newOccur
+    let tmp = [(x !! 0), (x !! 1), round r2, round g2, round b2]
+    centro
+    -- calculateCentroid xs points index (n + 1) (centro ++ [tmp])
+
+-- calculateCentroid :: [Centroid] -> [Point] -> Index -> Int -> [Centroid] -> [Centroid]
+-- calculateCentroid [] points index n centro = centro
+-- calculateCentroid (x:xs) points index n centro = do
+--         r <- calculatePoints x points index n 0 2
+--         g <- calculatePoints x points index n 0 3
+--         b <- calculatePoints x points index n 0 4
+--     let nbOccur = getIndex index n 0
+--         r2 = r `div` nbOccur
+--         g2 = g `div` nbOccur
+--         b2 = b `div` nbOccur
+--         tmp = [x !! 0, x !! 1, r2, g2, b2]
+--     in calculateCentroid xs points index (n + 1) (centro ++ [tmp])
