@@ -21,9 +21,6 @@ description:         Please see the README on GitHub at <https://github.com/MaoK
 
 dependencies:
 - base >= 4.7 && < 5
-- text
-- parsec
-
 
 ghc-options:
 - -Wall

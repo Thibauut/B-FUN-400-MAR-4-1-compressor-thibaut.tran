@@ -9,25 +9,17 @@ import System.Random (randomRIO, newStdGen, RandomGen, randomR)
 import Data.List (foldl')
 import System.Environment
 
-type Point = [Double]
+type Point = [Int]
 type Centroid = Point
 type Cluster = [Point]
+type Index = [Int]
 
-defaultPoint :: Point
-defaultPoint = [165, 42, 42]
+distance :: [Int] -> [Int] -> Double
+distance p1 p2 =
+    sqrt (((fromIntegral (p1 !! 2)) - (fromIntegral (p2 !! 2))) ** 2 + ((fromIntegral (p1 !! 3)) - (fromIntegral (p2 !! 3))) ** 2 + ((fromIntegral (p1 !! 4)) - (fromIntegral (p2 !! 4))) ** 2)
 
-defaultPointOther :: Point
-defaultPointOther = [180, 44, 32]
-
-defaultListPoint :: Cluster
-defaultListPoint = [defaultPoint, defaultPointOther, defaultPoint, defaultPoint, defaultPoint, defaultPoint, defaultPoint, defaultPoint, defaultPoint, defaultPoint]
-
--- distance :: (Int, Int, Int) -> (Int, Int, Int) -> Double
--- distance (x1, y1, z1) (x2, y2, z2) =
---     sqrt ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
-
-distance2 :: Point -> Point -> Double
-distance2 x y = sqrt $ sum $ zipWith (\a b -> (a - b) ** 2) x y
+-- distance :: Point -> Point -> Double
+-- distance x y = sqrt $ sum $ zipWith (\a b -> (a - b) ** 2) x y
 
 myOpen :: String -> IO String
 myOpen filepath = do
@@ -41,16 +33,26 @@ parsePoint s = map read $ words $ map (\c -> if c == ',' then ' ' else c) $ filt
 parsePoints :: String -> [Point]
 parsePoints s = map parsePoint $ lines s
 
-myHead :: String -> [Point]
-myHead file = do
-    let tmp = lines file
-    -- let tmp6 = myParser (tmp !! 1) 2 2 []
-    return []
---     print (tmp6)
+printCentroids :: [Centroid] -> IO ()
+printCentroids [] = return ()
+printCentroids (x:xs) = do
+  putStr "--\n("
+  printOneCentroids x 0
+  putStrLn ")\n-"
+  printCentroids xs
 
---     -- print (stringToTuple (tmp !! 0))
---     -- let tmp2 = parseListToTuple tmp
---     -- print tmp2
+printOneCentroids :: Centroid -> Int -> IO ()
+printOneCentroids [] n = return ()
+printOneCentroids (x:xs) n = do
+  if n == 2 || n == 3 then do
+    putStr (show x)
+    putStr ","
+    printOneCentroids xs (n + 1)
+  else
+    if n == 4 then do
+      putStr (show x)
+    else
+     printOneCentroids xs (n + 1)
 
 initCentroids :: Int -> [Point] -> IO [Centroid]
 initCentroids k points = do
@@ -58,38 +60,57 @@ initCentroids k points = do
   indices <- mapM (\_ -> randomRIO (0, n-1)) [1..k]
   return $ map (points !!) indices
 
-clusterError :: [Cluster] -> Double
-clusterError clusters = sum $ concatMap clusterError' clusters
-  where
-    clusterError' cluster =
-      let centroid = calculateCentroid cluster
-      in map (distance2 centroid) cluster
+-- clusterError :: [Cluster] -> Double
+-- clusterError clusters = sum $ concatMap clusterError' clusters
+--   where
+--     clusterError' cluster =
+--       let centroid = calculateCentroid cluster
+--       in map (distance centroid) cluster
 
 isConverged :: [Centroid] -> [Centroid] -> Double -> Bool
 isConverged oldCentroids newCentroids converged = do
-    let tmp = zipWith distance2 oldCentroids newCentroids
+    let tmp = zipWith distance oldCentroids newCentroids
     let tmp2 = foldl' (\acc x -> acc + x) 0 tmp
     if tmp2 < converged then
         True
     else
         False
 
-kMeans :: Int -> Double -> [Point] -> IO [Cluster]
-kMeans k threshold points = do
-  centroids <- initCentroids k points
-  let loop clusters oldCentroids = do
-        let newClusters = closest centroids points
-            newCentroids = map calculateCentroid newClusters
-        if isConverged oldCentroids newCentroids threshold
-          then putStrLn "Converged!" >> return clusters
-          else loop newClusters newCentroids
-  loop [] centroids
+printIndex :: Index -> [Point] -> Int -> Int -> IO ()
+printIndex [] points n count = return ()
+printIndex (x:xs) points n count = do
+    if x == n then do
+        putStr "("
+        putStr (show (points !! count !! 0))
+        putStr ","
+        putStr (show (points !! count !! 1))
+        putStr ") "
+        putStr "("
+        printOneCentroids (points !! count) 0
+        putStrLn ")"
+        printIndex xs points n (count + 1)
+    else
+        printIndex xs points n (count + 1)
 
-calculateSSE :: [Cluster] -> [Centroid] -> Double
-calculateSSE clusters centroids =
-  foldl' (\acc (c,p) -> acc + distance2 c p) 0 (zip centroids points)
-  where
-    points = concat clusters
+printResult :: [Centroid] -> Index -> [Point] -> Int -> IO ()
+printResult [] index points n = return ()
+printResult (x:xs) index points n = do
+    putStr "--\n("
+    printOneCentroids x 0
+    putStrLn ")\n-"
+    printIndex index points n 0
+    printResult xs index points (n + 1)
+
+kMeans :: Int -> Double -> [Centroid] -> [Point] -> IO()
+kMeans k threshold centroids points = do
+  centro <- initCentroids k points
+  let loop index oldCentroids = do
+        let newIndex = closest centro points []
+            newCentroids = calculateCentroid centro newIndex
+        if isConverged oldCentroids newCentroids threshold
+          then printResult newCentroids (closest newCentroids points []) points 0
+          else loop newIndex newCentroids
+  loop [] centro
 
 checkFlags :: [String] -> Int -> Bool
 checkFlags [] num = True
@@ -112,7 +133,6 @@ checkArgumentsDouble :: String -> IO ()
 checkArgumentsDouble str | (readMaybe str :: Maybe Double) == Nothing = exitWith (ExitFailure 84)
                          | otherwise = checkArgumentsDoubleNext str
 
-
 checkNumberOfColors :: [Cluster] -> Int -> Bool
 checkNumberOfColors [] num = True
 checkNumberOfColors (x:xs) num | (length x) > num = False
@@ -132,6 +152,11 @@ getArg [] arg num = 0
 getArg (x:xs) arg num | x == arg = (num + 1)
                       | otherwise = getArg xs arg (num + 1)
 
+getCluster :: [Cluster] -> Int -> Cluster
+getCluster [] num = []
+getCluster (x:xs) num | num == 0 = x
+                      | otherwise = getCluster xs (num - 1)
+
 main :: IO (Int)
 main = do
     args <- getArgs
@@ -139,23 +164,39 @@ main = do
     checkArgumentsDouble (args !! (getArg args "-l" 0))
     checkArgumentsInt (args !! (getArg args "-n" 0))
     file <- myOpen (args !! (getArg args "-f" 0))
-    -- print(parsePoints file)
-    res <- kMeans (read (args !! (getArg args "-n" 0)) :: Int) (read (args !! (getArg args "-l" 0)) :: Double) (parsePoints file)
-    putStrLn "--"
-    putStrLn "-"
-    putStrLn "--"
-    putStrLn "-"
+    -- centro <- (initCentroids (read (args !! (getArg args "-n" 0)) :: Int) (parsePoints file))
+    -- printCentroids centro
+    res <- kMeans (read (args !! (getArg args "-n" 0)) :: Int) (read (args !! (getArg args "-l" 0)) :: Double) [] (parsePoints file)
+    -- print (floor ((calculateCentroid (getCluster res 1)) !! 2))
+    -- print res
     return 0
 
-closest :: [Centroid] -> [Point] -> [Cluster]
-closest centroids points =
-  let assign p = minimumBy (comparedistance2 p) centroids
-      comparedistance2 p x y = compare (distance2 p x) (distance2 p y)
-      distance2 x y = sqrt $ sum $ zipWith (\a b -> (a - b) ** 2) x y
-  in groupBy (\a b -> assign a == assign b) points
+findClosest :: [Centroid] -> Point -> Double -> Int -> Int -> Int
+findClosest [] point n index count = index
+findClosest (x:xs) point n index count = do
+    let tmp = distance x point
+    if tmp < n then
+        findClosest xs point tmp count (count + 1)
+    else
+        findClosest xs point n index (count + 1)
 
-calculateCentroid :: Cluster -> Centroid
-calculateCentroid points =
-  let pointCount = fromIntegral $ length points
-      sums = map sum $ transpose points
-  in map (/ pointCount) sums
+closest :: [Centroid] -> [Point] -> Index -> Index
+closest centroids [] index = index
+closest centroids (x:xs) index = do
+    let tmp = findClosest centroids x 10000.0 0 0
+    tmp : closest centroids xs index
+
+-- calculateNewCentroids :: [Centroid] -> [Point] -> Index -> [Centroid]
+-- calculateNewCentroids [] points index = []
+-- calculateNewCentroids (x:xs) points index = do
+--     let tmp = calculateCentroid (getCluster points index) 0
+--     tmp : calculateNewCentroids xs points (index + 1)
+
+calculateCentroid :: [Centroid] -> Index -> [Centroid]
+calculateCentroid points index = points
+
+-- calculateCentroid :: Centroid -> Index -> Centroid
+-- calculateCentroid points index =
+--   let pointCount = fromIntegral $ length points
+--       sums = map sum $ transpose points
+--   in map (/ pointCount) sums
