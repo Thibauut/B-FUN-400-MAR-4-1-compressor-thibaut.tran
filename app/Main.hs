@@ -51,11 +51,25 @@ printOneCentroids (x:xs) n = do
     else
      printOneCentroids xs (n + 1)
 
-initCentroids :: Int -> [Point] -> IO [Centroid]
-initCentroids k points = do
-  let n = length points
-  indices <- mapM (\_ -> randomRIO (0, n-1)) [1..k]
-  return $ map (points !!) indices
+getColorCentroid :: Centroid -> [Int]
+getColorCentroid centroid = [centroid !! 2, centroid !! 3, centroid !! 4]
+
+checkSameCentroid :: [Centroid] -> Centroid -> Bool
+checkSameCentroid [] centroid = False
+checkSameCentroid (x:xs) centroid | (getColorCentroid x) == (getColorCentroid centroid) = True
+                                  | otherwise = checkSameCentroid xs centroid
+
+initCentroids :: Int -> Int -> Int -> [Point] -> [Centroid] -> IO [Centroid]
+initCentroids k count pos points centro = do
+    if count == k then
+        return centro
+    else do
+        if checkSameCentroid centro (getPoint points pos 0) == True then
+            initCentroids k count (pos + 1) points centro
+        else do
+            let centrop = centro ++ [(getPoint points pos 0)]
+            initCentroids k (count + 1) (pos + 1) points centrop
+
 
 isConverged :: [Centroid] -> [Centroid] -> Double -> Bool
 isConverged oldCentroids newCentroids converged = do
@@ -95,9 +109,12 @@ printResult (x:xs) index points n = do
     printIndex index points n 0
     printResult xs index points (n + 1)
 
+-- initMyCentroids :: [Centriud] -> [Points] -> [Centroid]
+-- initMyCentroids centro = do
+
 kMeans :: Int -> Double -> [Centroid] -> [Point] -> IO()
 kMeans k threshold centroids points = do
-  centro <- initCentroids k points
+  centro <- initCentroids k 0 0 points []
   let loop index oldCentroids = do
         let newIndex = closest oldCentroids points []
             newCentroids = calculateCentroid oldCentroids points newIndex 0 []
