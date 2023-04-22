@@ -14,6 +14,9 @@ type Centroid = Point
 type Cluster = [Point]
 type Index = [Int]
 
+euclideanDistance :: Int -> Int -> Int -> Int -> Int -> Int -> Double
+euclideanDistance x1 x2 y1 y2 z1 z2 = sqrt $ ((fromIntegral x1 - fromIntegral x2)^2) + ((fromIntegral y1 - fromIntegral y2)^2) + ((fromIntegral z1 - fromIntegral z2)^2)
+
 distance :: [Int] -> [Int] -> Double
 distance p1 p2 =
     sqrt (((fromIntegral (p1 !! 2)) - (fromIntegral (p2 !! 2))) ** 2 + ((fromIntegral (p1 !! 3)) - (fromIntegral (p2 !! 3))) ** 2 + ((fromIntegral (p1 !! 4)) - (fromIntegral (p2 !! 4))) ** 2)
@@ -72,14 +75,10 @@ initCentroids k count pos points centro = do
             initCentroids k (count + 1) (pos + 1) points centrop
 
 
-isConverged :: [Centroid] -> [Centroid] -> Double -> Bool
-isConverged oldCentroids newCentroids converged = do
-    let tmp = zipWith distance oldCentroids newCentroids
-    let tmp2 = foldl' (\acc x -> acc + x) 0 tmp
-    if tmp2 > converged then
-        True
-    else
-        False
+isConverged :: [Centroid] -> [Centroid] -> Double -> Double
+isConverged (o:os) (n:ns) converged | length os == 0 = 0
+                                    | (euclideanDistance (o !! 2) (n !! 2) (o !! 3) (n !! 3) (o !! 4) (n !! 4)) > converged = (euclideanDistance (o !! 2) (n !! 2) (o !! 3) (n !! 3) (o !! 4) (n !! 4))
+                                    | otherwise = isConverged os ns converged
 
 getPoint :: [Point] -> Int -> Int -> Point
 getPoint (x:xs) pos count | count == pos = x
@@ -125,7 +124,11 @@ kMeans k threshold centroids points = do
         -- -- print newIndex
         -- -- print points
         -- print "hey 2"
-        if isConverged oldCentroids newCentroids threshold == True
+        let tmp = isConverged oldCentroids newCentroids threshold
+            tmp2 = tmp
+        print (oldCentroids !! 0 !! 4)
+        print (newCentroids !! 0 !! 4)
+        if isConverged oldCentroids newCentroids threshold /= threshold
           then printResult oldCentroids newIndex points 0
           else loop newIndex newCentroids
   loop [] centro
@@ -145,7 +148,7 @@ checkArgumentsInt str | (readMaybe str :: Maybe Int) == Nothing = exitWith (Exit
                       | otherwise = checkArgumentsIntNext str
 
 checkArgumentsDoubleNext :: String -> IO()
-checkArgumentsDoubleNext str | (readMaybe str :: Maybe Double) <= Just(0) || (readMaybe str :: Maybe Double) > Just(1)  = exitWith (ExitFailure 84)
+checkArgumentsDoubleNext str | (readMaybe str :: Maybe Double) <= Just(0) = exitWith (ExitFailure 84)
                              | otherwise = return ()
 
 checkArgumentsDouble :: String -> IO ()
@@ -189,7 +192,7 @@ main = do
 findClosest :: [Centroid] -> Point -> Double -> Int -> Int -> Int
 findClosest [] point n index count = index
 findClosest (x:xs) point n index count = do
-    let tmp = distance x point
+    let tmp = distance point x
     if tmp < n then
         findClosest xs point tmp count (count + 1)
     else
