@@ -120,7 +120,7 @@ kMeans k threshold centroids points = do
         let newIndex = closest oldCentroids points []
             newCentroids = calculateCentroid oldCentroids points newIndex 0 []
         -- print "hey 1"
-        print oldCentroids
+        -- print oldCentroids
         -- -- print newIndex
         -- -- print newIndex
         -- -- print points
