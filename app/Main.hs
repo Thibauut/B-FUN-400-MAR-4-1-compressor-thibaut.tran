@@ -64,10 +64,11 @@ initCentroids k count pos points centro = do
     if count == k then
         return centro
     else do
-        if checkSameCentroid centro (getPoint points pos 0) == True then
+        rand <- randomRIO (0, (length points - 1))
+        if (checkSameCentroid centro (getPoint points rand 0)) == True then
             initCentroids k count (pos + 1) points centro
         else do
-            let centrop = centro ++ [(getPoint points pos 0)]
+            let centrop = centro ++ [(getPoint points rand 0)]
             initCentroids k (count + 1) (pos + 1) points centrop
 
 
@@ -75,7 +76,7 @@ isConverged :: [Centroid] -> [Centroid] -> Double -> Bool
 isConverged oldCentroids newCentroids converged = do
     let tmp = zipWith distance oldCentroids newCentroids
     let tmp2 = foldl' (\acc x -> acc + x) 0 tmp
-    if tmp2 < converged then
+    if tmp2 > converged then
         True
     else
         False
@@ -118,10 +119,17 @@ kMeans k threshold centroids points = do
   let loop index oldCentroids = do
         let newIndex = closest oldCentroids points []
             newCentroids = calculateCentroid oldCentroids points newIndex 0 []
-        if isConverged oldCentroids newCentroids threshold
+        -- print "hey 1"
+        print oldCentroids
+        -- -- print newIndex
+        -- -- print newIndex
+        -- -- print points
+        -- print "hey 2"
+        if isConverged oldCentroids newCentroids threshold == True
           then printResult oldCentroids newIndex points 0
           else loop newIndex newCentroids
   loop [] centro
+  return ()
 
 checkFlags :: [String] -> Int -> Bool
 checkFlags [] num = True
@@ -193,13 +201,20 @@ closest centroids (x:xs) index = do
     let tmp = findClosest centroids x 10000.0 0 0
     tmp : closest centroids xs index
 
-calculatePoints :: Centroid -> [Point] -> Index -> Int -> Int -> Int -> Int
-calculatePoints centroid points [] n res pos = res
-calculatePoints centroid (y:ys) (x:xs) n res pos = do
-    if x == n then
-        calculatePoints centroid (y:ys) (x:xs) n (res + (centroid !! pos)) pos
-    else
-        calculatePoints centroid ys xs n res pos
+calculateR :: Int -> [Point] -> Index -> Int -> Int
+calculateR pos [] [] res = res
+calculateR pos (p:ps) (i:is) res | i == pos = calculateR pos ps is (res + (p !! 2))
+                                 | otherwise = calculateR pos ps is res
+
+calculateG :: Int -> [Point] -> Index -> Int -> Int
+calculateG pos [] [] res = res
+calculateG pos (p:ps) (i:is) res | i == pos = calculateG pos ps is (res + (p !! 3))
+                                 | otherwise = calculateG pos ps is res
+
+calculateB :: Int -> [Point] -> Index -> Int -> Int
+calculateB pos [] [] res = res
+calculateB pos (p:ps) (i:is) res | i == pos = calculateB pos ps is (res + (p !! 4))
+                                 | otherwise = calculateB pos ps is res
 
 getIndex :: Index -> Int -> Int -> Int
 getIndex [] n count = count
@@ -207,16 +222,17 @@ getIndex (x:xs) n count
     | x == n = getIndex xs n (count + 1)
     | otherwise = getIndex xs n count
 
+getOcc :: Index -> Int -> Int
+getOcc [] n = 0
+getOcc (x:xs) n | x == n = 1 + getOcc xs n
+                | otherwise = getOcc xs n
+
 calculateCentroid :: [Centroid] -> [Point] -> Index -> Int -> [Centroid] -> [Centroid]
-calculateCentroid [] points index n centro  = centro
+calculateCentroid [] points index n centro = centro
 calculateCentroid (x:xs) points index n centro = do
-    let nbOccur = getIndex index n n
-        newOccur = fromIntegral nbOccur :: Double
-    let r = calculatePoints x points index n 0 2
-        r2 = fromIntegral r / newOccur
-    let g = calculatePoints x points index n 0 3
-        g2 = fromIntegral g / newOccur
-    let b = calculatePoints x points index n 0 4
-        b2 = fromIntegral b / newOccur
-    let tmp = [(head x), (head (tail x)), round r2, round g2, round b2]
-    centro
+    let occ = getOcc index n
+    let r = calculateR n points index 0
+    let g = calculateG n points index 0
+    let b = calculateB n points index 0
+    let tmp = [0, 0, r `div` occ , g `div` occ, b `div` occ]
+    calculateCentroid xs points index (n + 1) (tmp : centro)
