@@ -3,7 +3,7 @@
 -- Visual Studio Live Share (Workspace)
 -- File description:
 -- Main.hs
- --}
+--}
 
 module Main (main) where
 
