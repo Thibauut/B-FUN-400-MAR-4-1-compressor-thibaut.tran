@@ -77,7 +77,7 @@ initCentroids k count pos points centro = do
 
 isConverged :: [Centroid] -> [Centroid] -> Double -> Double
 isConverged (o:os) (n:ns) converged | length os == 0 = 0
-                                    | (euclideanDistance (o !! 2) (n !! 2) (o !! 3) (n !! 3) (o !! 4) (n !! 4)) > converged = (euclideanDistance (o !! 2) (n !! 2) (o !! 3) (n !! 3) (o !! 4) (n !! 4))
+                                    | (euclideanDistance (o !! 2) (n !! 2) (o !! 3) (n !! 3) (o !! 4) (n !! 4)) < converged = (euclideanDistance (o !! 2) (n !! 2) (o !! 3) (n !! 3) (o !! 4) (n !! 4))
                                     | otherwise = isConverged os ns converged
 
 getPoint :: [Point] -> Int -> Int -> Point
@@ -109,26 +109,13 @@ printResult (x:xs) index points n = do
     printIndex index points n 0
     printResult xs index points (n + 1)
 
--- initMyCentroids :: [Centriud] -> [Points] -> [Centroid]
--- initMyCentroids centro = do
-
 kMeans :: Int -> Double -> [Centroid] -> [Point] -> IO()
 kMeans k threshold centroids points = do
   centro <- initCentroids k 0 0 points []
   let loop index oldCentroids = do
         let newIndex = closest oldCentroids points []
             newCentroids = calculateCentroid oldCentroids points newIndex 0 []
-        -- print "hey 1"
-        -- print oldCentroids
-        -- -- print newIndex
-        -- -- print newIndex
-        -- -- print points
-        -- print "hey 2"
-        let tmp = isConverged oldCentroids newCentroids threshold
-            tmp2 = tmp
-        print (oldCentroids !! 0 !! 4)
-        print (newCentroids !! 0 !! 4)
-        if isConverged oldCentroids newCentroids threshold /= threshold
+        if isConverged oldCentroids newCentroids threshold <= threshold
           then printResult oldCentroids newIndex points 0
           else loop newIndex newCentroids
   loop [] centro
